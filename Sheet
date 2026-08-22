@@ -1,0 +1,239 @@
+-- Load Elerium v2 UI Library
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/IVRzHxZ/Kyo-UI-Library/refs/heads/main/Kyo-UI-LibraryxPrivate", true))()
+
+-- Create Window
+local window = library:AddWindow("Muscle Legends", {
+    main_color = Color3.fromRGB(41, 74, 122),
+    min_size = Vector2.new(350, 300),
+    can_resize = false,
+})
+
+-- Gumawa o gamitin ang Machines Tab
+local machinesTab = window:AddTab("Farm")
+machinesTab:Show()
+
+local autoMachineAndFarmEnabled = false
+
+-- Isang malupit at pinagsamang Switch para sa Industrial Bar Lift + Auto Rep
+machinesTab:AddSwitch("Auto Industrial Bar Lift", function(state)
+    autoMachineAndFarmEnabled = state
+    
+    if autoMachineAndFarmEnabled then
+        task.spawn(function()
+            -- Helper function para hanapin at gamitin ang machine seat
+            local function interactWithMachine()
+                local machineSeat = workspace:FindFirstChild("machinesFolder") 
+                    and workspace.machinesFolder:FindFirstChild("Industrial Bar Lift") 
+                    and workspace.machinesFolder["Industrial Bar Lift"]:FindFirstChild("interactSeat")
+                
+                if machineSeat then
+                    local args = {
+                        [1] = "useMachine",
+                        [2] = machineSeat
+                    }
+                    pcall(function()
+                        game:GetService("ReplicatedStorage").rEvents.machineInteractRemote:InvokeServer(unpack(args))
+                    end)
+                end
+            end
+            
+            -- I-trigger agad ang pag-upo sa simula
+            interactWithMachine()
+            
+            local timer = 0
+            while autoMachineAndFarmEnabled do
+                local player = game:GetService("Players").LocalPlayer
+                
+                -- Tuloy-tuloy na pag-fire ng rep habang nakaupo
+                if player and player:FindFirstChild("muscleEvent") then
+                    local args = {
+                        [1] = "rep"
+                    }
+                    player.muscleEvent:FireServer(unpack(args))
+                end
+                
+                -- Re-isang saksak sa machine bawat 5 segundo para hindi ma-bug o matanggal sa pagkakaupo
+                timer = timer + 0.1
+                if timer >= 5 then
+                    timer = 0
+                    interactWithMachine()
+                end
+                
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
+
+-- Create Tab
+local crystalsTab = window:AddTab("Crystals")
+
+local selectedCrystal = "Blue Crystal"
+local autoOpenEnabled = false
+
+-- Create Dropdown Menu using Elerium v2 native syntax
+local crystalDropdown = crystalsTab:AddDropdown("Select Crystal", function(text)
+    selectedCrystal = text
+end)
+
+-- Add all Muscle Legends crystals to the dropdown
+crystalDropdown:Add("Blue Crystal")
+crystalDropdown:Add("Green Crystal")
+crystalDropdown:Add("Frost Crystal")
+crystalDropdown:Add("Mythical Crystal")
+crystalDropdown:Add("Inferno Crystal")
+crystalDropdown:Add("Legends Crystal")
+crystalDropdown:Add("Muscle Elite Crystal")
+crystalDropdown:Add("Galaxy Oracle Crystal")
+crystalDropdown:Add("Jungle Crystal")
+crystalDropdown:Add("Industrial Crystal")
+
+-- Switch to toggle auto-opening of the selected crystal
+crystalsTab:AddSwitch("Auto Open Crystal", function(state)
+    autoOpenEnabled = state
+    
+    if autoOpenEnabled then
+        task.spawn(function()
+            while autoOpenEnabled do
+                local args = {
+                    [1] = "openCrystal",
+                    [2] = selectedCrystal
+                }
+                
+                -- Sinubukan ko gamitin ang InvokeServer base sa binigay mo, 
+                -- pero kung mag-error o hindi gumana, pwede mong palitan ng FireServer
+                pcall(function()
+                    game:GetService("ReplicatedStorage").rEvents.openCrystalRemote:InvokeServer(unpack(args))
+                end)
+                
+                task.wait(0.5) -- Pwede mong baguhin yung delay kung mabilis o mabagal
+            end
+        end)
+    end
+end)
+
+local autoSellFolder = crystalsTab:AddFolder("Auto Sell")
+
+-- Helper function para gumawa ng auto-sell switch para sa bawat pet
+local function createAutoSellSwitch(tab, petName)
+    local autoSellEnabled = false
+    
+    autoSellFolder:AddSwitch("Auto Sell " .. petName, function(state)
+        autoSellEnabled = state
+        
+        if autoSellEnabled then
+            task.spawn(function()
+                while autoSellEnabled do
+                    local player = game:GetService("Players").LocalPlayer
+                    local petsFolder = player and player:FindFirstChild("petsFolder")
+                    local petTarget = nil
+                    
+                    if petsFolder then
+                        -- Hinahanap natin ang pet sa lahat ng subfolders (Unique, Common, at iba pa)
+                        for _, folder in ipairs(petsFolder:GetChildren()) do
+                            if folder:IsA("Folder") or folder:IsA("Configuration") then
+                                local found = folder:FindFirstChild(petName)
+                                if found then
+                                    petTarget = found
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    
+                    if petTarget then
+                        local args = {
+                            [1] = "sellPet",
+                            [2] = petTarget
+                        }
+
+                        game:GetService("ReplicatedStorage").rEvents.sellPetEvent:FireServer(unpack(args))
+                    end
+                    
+                    task.wait(1) -- Delay bago i-check ulit
+                end
+            end)
+        end
+    end)
+end
+
+-- Pag-generate ng bawat switch sa crystalsTab (Inayos ko na rin ang spelling ng iba)
+createAutoSellSwitch(crystalsTab, "Core Pup")
+createAutoSellSwitch(crystalsTab, "Volt Talon")
+createAutoSellSwitch(crystalsTab, "Reactor Beast")
+createAutoSellSwitch(crystalsTab, "Plasma Ravager") -- Inayos mula Ravanger
+createAutoSellSwitch(crystalsTab, "Titan Reactor")
+createAutoSellSwitch(crystalsTab, "Apex Overlord")  -- Inayos mula Overloard
+
+-- Gumawa tayo ng Folder na may pangalang "Auto Evolve" sa loob ng crystalsTab
+local autoEvolveFolder = crystalsTab:AddFolder("Auto Evolve")
+
+-- Helper function para gumawa ng auto-evolve switch para sa bawat pet
+local function createAutoEvolveSwitch(folder, petName)
+    local autoEvolveEnabled = false
+    
+    folder:AddSwitch("Auto Evolve " .. petName, function(state)
+        autoEvolveEnabled = state
+        
+        if autoEvolveEnabled then
+            task.spawn(function()
+                while autoEvolveEnabled do
+                    local args = {
+                        [1] = "evolvePet",
+                        [2] = petName
+                    }
+
+                    game:GetService("ReplicatedStorage").rEvents.petEvolveEvent:FireServer(unpack(args))
+                    
+                    task.wait(1.5) -- Delay bago i-fire ulit ang remote
+                end
+            end)
+        end
+    end)
+end
+
+-- Pag-generate ng bawat switch sa loob ng "Auto Evolve" folder
+createAutoEvolveSwitch(autoEvolveFolder, "Core Pup")
+createAutoEvolveSwitch(autoEvolveFolder, "Volt Talon")
+createAutoEvolveSwitch(autoEvolveFolder, "Reactor Beast")
+createAutoEvolveSwitch(autoEvolveFolder, "Plasma Ravager")
+createAutoEvolveSwitch(autoEvolveFolder, "Titan Reactor")
+createAutoEvolveSwitch(autoEvolveFolder, "Apex Overload")
+
+local autoEvolveAllEnabled = false
+
+-- Switch para i-auto evolve LAHAT ng pets sa inventory mo
+autoEvolveFolder:AddSwitch("Auto Evolve All Pets", function(state)
+    autoEvolveAllEnabled = state
+    
+    if autoEvolveAllEnabled then
+        task.spawn(function()
+            while autoEvolveAllEnabled do
+                local player = game:GetService("Players").LocalPlayer
+                local petsFolder = player and player:FindFirstChild("petsFolder")
+                
+                if petsFolder then
+                    -- Kunin lahat ng subfolders (Unique, Common, Rare, Epic, etc.)
+                    for _, subfolder in ipairs(petsFolder:GetChildren()) do
+                        if subfolder:IsA("Folder") or subfolder:IsA("Configuration") then
+                            -- Silipin lahat ng pets sa loob ng subfolder na yun
+                            for _, pet in ipairs(subfolder:GetChildren()) do
+                                if not autoEvolveAllEnabled then break end
+                                
+                                local args = {
+                                    [1] = "evolvePet",
+                                    [2] = pet.Name -- Pangalan ng pet ang pinapasa sa remote
+                                }
+
+                                game:GetService("ReplicatedStorage").rEvents.petEvolveEvent:FireServer(unpack(args))
+                                task.wait(0.2) -- Kaunting delay kada pet para maiwasan ang rate limit
+                            end
+                        end
+                    end
+                end
+                
+                task.wait(1.5) -- Uulitin pagkatapos ng ilang segundo para i-check kung may bago kang pets
+            end
+        end)
+    end
+end)
