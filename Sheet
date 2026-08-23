@@ -8,70 +8,461 @@ local window = library:AddWindow("Muscle Legends", {
     can_resize = false,
 })
 
--- Gumawa o gamitin ang Machines Tab
-local machinesTab = window:AddTab("Farm")
-machinesTab:Show()
+local _FarmV1 = window:AddTab('Farm');
 
-local autoMachineAndFarmEnabled = false
+local fuck = _FarmV1:AddFolder("Farming Tools")
+local opfarms = _FarmV1:AddFolder("OP Farming")
 
--- Isang malupit at pinagsamang Switch para sa Industrial Bar Lift + Auto Rep
-machinesTab:AddSwitch("Auto Industrial Bar Lift", function(state)
-    autoMachineAndFarmEnabled = state
+-- Auto Strength Switch
+fuck:AddSwitch('Auto Lift', function(p30)
+    isAutoStrength = p30
+    local _LocalPlayer2 = game.Players.LocalPlayer
     
-    if autoMachineAndFarmEnabled then
-        task.spawn(function()
-            -- Helper function para hanapin at gamitin ang machine seat
-            local function interactWithMachine()
-                local machineSeat = workspace:FindFirstChild("machinesFolder") 
-                    and workspace.machinesFolder:FindFirstChild("Industrial Bar Lift") 
-                    and workspace.machinesFolder["Industrial Bar Lift"]:FindFirstChild("interactSeat")
+    local function v36()
+        while isAutoStrength do
+            local _Backpack = _LocalPlayer2:FindFirstChild('Backpack')
+            local v33 = _LocalPlayer2.Character or _LocalPlayer2.CharacterAdded:Wait()
+            local _Humanoid = v33:FindFirstChild('Humanoid')
+            local v35 = _Backpack and _Humanoid and (not v33:FindFirstChild('Weight') and _Backpack:FindFirstChild('Weight'))
+            if v35 then
+                _Humanoid:EquipTool(v35)
+            end
+            _LocalPlayer2.muscleEvent:FireServer('rep')
+            task.wait(0.1)
+        end
+    end
+    if p30 then
+        task.spawn(v36)
+    end
+end):Set(false)
+
+		fuck:AddSwitch('Auto Pushups', function(p316)
+			isAutoPushups = p316
+			local _LocalPlayer31 = game.Players.LocalPlayer
+			local _Backpack2 = _LocalPlayer31:FindFirstChild('Backpack')
+			while isAutoPushups do
+				wait(0.01)
+				local v319 = _Backpack2 and _Backpack2:FindFirstChild('Pushups')
+				if v319 then
+					_LocalPlayer31.Character.Humanoid:EquipTool(v319)
+				end
+				game:GetService('Players').LocalPlayer.muscleEvent:FireServer(unpack({
+					'rep',
+				}))
+			end
+			if not isAutoPushups then
+				local _Tool = _LocalPlayer31.Character:FindFirstChildOfClass('Tool')
+				if _Tool and _Tool.Name == 'Pushups' then
+					_Tool.Parent = _Backpack2
+				end
+			end
+		end):Set(false)
+		fuck:AddSwitch('Auto Situps', function(p321)
+			isAutoSitups = p321
+			local _LocalPlayer32 = game.Players.LocalPlayer
+			local _Backpack3 = _LocalPlayer32:FindFirstChild('Backpack')
+			while isAutoSitups do
+				wait(0.01)
+				local v324 = _Backpack3 and _Backpack3:FindFirstChild('Situps')
+				if v324 then
+					_LocalPlayer32.Character.Humanoid:EquipTool(v324)
+				end
+				game:GetService('Players').LocalPlayer.muscleEvent:FireServer(unpack({
+					'rep',
+				}))
+			end
+			if not isAutoSitups then
+				local _Tool2 = _LocalPlayer32.Character:FindFirstChildOfClass('Tool')
+				if _Tool2 and _Tool2.Name == 'Situps' then
+					_Tool2.Parent = _Backpack3
+				end
+			end
+		end):Set(false)
+		fuck:AddSwitch('Auto Handstands', function(p326)
+			isAutoHandstands = p326
+			local _LocalPlayer33 = game.Players.LocalPlayer
+			local _Backpack4 = _LocalPlayer33:FindFirstChild('Backpack')
+			while isAutoHandstands do
+				wait(0.01)
+				local v329 = _Backpack4 and _Backpack4:FindFirstChild('Handstands')
+				if v329 then
+					_LocalPlayer33.Character.Humanoid:EquipTool(v329)
+				end
+				game:GetService('Players').LocalPlayer.muscleEvent:FireServer(unpack({
+					'rep',
+				}))
+			end
+			if not isAutoHandstands then
+				local _Tool3 = _LocalPlayer33.Character:FindFirstChildOfClass('Tool')
+				if _Tool3 and _Tool3.Name == 'Handstands' then
+					_Tool3.Parent = _Backpack4
+				end
+			end
+		end):Set(false)
+
+         -- Global tracking variables
+local punchConnection = nil
+local isCombinedFarm = false
+
+opfarms:AddSwitch('Fast Farming', function(state)
+    isCombinedFarm = state
+    _G.punchanim = state
+    _G["musclekingautorock"] = state
+    
+    local _LocalPlayer = game.Players.LocalPlayer
+    local _Backpack = _LocalPlayer:FindFirstChild('Backpack')
+    
+    -- Disconnect old runtime processes to cleanly restart the state machine
+    if punchConnection then 
+        punchConnection:Disconnect() 
+        punchConnection = nil 
+    end
+
+    if state then
+        -- 1. INITIALIZE ENVIRONMENT VISUALS (Runs once to optimize render pipelines)
+        pcall(function()
+            local _Rock = game.Workspace.machinesFolder:FindFirstChild('Muscle King Mountain'):FindFirstChild('Rock')
+            if _Rock then
+                _Rock.Size = Vector3.new(12, 12, 12)
+                _Rock.Transparency = 1
+                _Rock.CanCollide = false
                 
-                if machineSeat then
-                    local args = {
-                        [1] = "useMachine",
-                        [2] = machineSeat
-                    }
-                    pcall(function()
-                        game:GetService("ReplicatedStorage").rEvents.machineInteractRemote:InvokeServer(unpack(args))
-                    end)
+                if _Rock:FindFirstChild('rockGui') then
+                    for _, guiItem in ipairs(_Rock.rockGui:GetChildren()) do
+                        guiItem.Visible = false
+                    end
+                end
+                
+                local particleNames = {'rockEmitter', 'hoopParticle', 'lavaParticle'}
+                for _, name in ipairs(particleNames) do
+                    local effect = _Rock:FindFirstChild(name)
+                    if effect then effect:Destroy() end
                 end
             end
-            
-            -- I-trigger agad ang pag-upo sa simula
-            interactWithMachine()
-            
-            local timer = 0
-            while autoMachineAndFarmEnabled do
-                local player = game:GetService("Players").LocalPlayer
+        end)
+
+        -- 2. FAST PUNCH RENDERING LOOP (Updates every rendering frame delta)
+        punchConnection = game:GetService('RunService').Heartbeat:Connect(function()
+            local _Character = _LocalPlayer.Character
+            if _Character and _G.punchanim then
+                local _Humanoid = _Character:FindFirstChildOfClass('Humanoid')
+                local _Punch = _Backpack:FindFirstChild('Punch') or _Character:FindFirstChild('Punch')
                 
-                -- Tuloy-tuloy na pag-fire ng rep habang nakaupo
-                if player and player:FindFirstChild("muscleEvent") then
-                    local args = {
-                        [1] = "rep"
-                    }
-                    player.muscleEvent:FireServer(unpack(args))
+                if _Punch then
+                    local _attackTime = _Punch:FindFirstChild('attackTime')
+                    if _attackTime then _attackTime.Value = 0 end
+                    if _Humanoid and _Punch.Parent ~= _Character then 
+                        _Humanoid:EquipTool(_Punch) 
+                    end
+                    _Punch:Activate()
+                end
+            end
+        end)
+
+        -- 3. THE FARMING PROCESSING LOOP
+        task.spawn(function()
+            -- Continuous infinite thread state evaluation
+            while isCombinedFarm do
+                local _Character = _LocalPlayer.Character
+                
+                -- Task 1: Lock Mountain Rock Instance onto Character Geometry
+                local _LeftHand = _Character and _Character:FindFirstChild('LeftHand')
+                local _Rock = game.Workspace.machinesFolder:FindFirstChild('Muscle King Mountain') and game.Workspace.machinesFolder['Muscle King Mountain']:FindFirstChild('Rock')
+                if _Rock and _LeftHand then
+                    _Rock.CFrame = _LeftHand.CFrame
                 end
                 
-                -- Re-isang saksak sa machine bawat 5 segundo para hindi ma-bug o matanggal sa pagkakaupo
-                timer = timer + 0.1
-                if timer >= 5 then
-                    timer = 0
-                    interactWithMachine()
+                -- Task 2: Maintain Pushup Tool Assembly State Hierarchy 
+                local _Pushups = _Backpack and _Backpack:FindFirstChild('Pushups')
+                if _Pushups and _Character and _Character:FindFirstChildOfClass('Humanoid') then
+                    _Character.Humanoid:EquipTool(_Pushups)
                 end
                 
-                task.wait(0.1)
+                -- Task 3: Package Datagram Array and Execute Network Request Upstream
+                if _LocalPlayer:FindFirstChild('muscleEvent') then
+                    _LocalPlayer.muscleEvent:FireServer(unpack({'rep'}))
+                end
+                
+                -- Task Yield: Safely hands threading priority back to engine memory pipeline
+                task.wait(0.01)
+            end
+        end)
+
+    else
+        -- 4. CLEAN RESET EXECUTABLE STACK (When state evaluation defaults to false)
+        
+        -- Restore tool properties to original profile boundaries
+        local _Punch = _Backpack:FindFirstChild('Punch') or (_LocalPlayer.Character and _LocalPlayer.Character:FindFirstChild('Punch'))
+        if _Punch and _Punch:FindFirstChild('attackTime') then 
+            _Punch.attackTime.Value = 0.35 
+        end
+        
+        -- Safely re-parent isolated tool models back to local collection inventory
+        if _LocalPlayer.Character then
+            local _Tool = _LocalPlayer.Character:FindFirstChildOfClass('Tool')
+            if _Tool and _Tool.Name == 'Pushups' then
+                _Tool.Parent = _Backpack
+            end
+        end
+        
+        -- Revert physical game workspace models back to client map positions
+        pcall(function()
+            local _Rock = game.Workspace.machinesFolder:FindFirstChild('Muscle King Mountain'):FindFirstChild('Rock')
+            if _Rock then
+                if _Rock:FindFirstChild('rockGui') then
+                    for _, guiItem in ipairs(_Rock.rockGui:GetChildren()) do
+                        guiItem.Visible = true
+                    end
+                end
+                _Rock.CanCollide = true
+                _Rock.Transparency = 0
+                _Rock.Size = Vector3.new(141.97381591796875, 123.69998931884766, 149.70497131347656)
+                if _Rock:FindFirstChild('originalPosition') then 
+                    _Rock.CFrame = CFrame.new(_Rock.originalPosition.Value) 
+                end
             end
         end)
     end
+end):Set(false)
+
+-- Global tracking variables
+local punchConnection = nil
+local isCombinedFarm = false
+
+opfarms:AddSwitch('Fast Farming V2', function(state)
+    isCombinedFarm = state
+    _G.punchanim = state
+    _G["musclekingautorock"] = state
+    
+    local _LocalPlayer = game.Players.LocalPlayer
+    local _Backpack = _LocalPlayer:FindFirstChild('Backpack')
+    
+    -- Disconnect old runtime processes to cleanly restart the state machine
+    if punchConnection then 
+        punchConnection:Disconnect() 
+        punchConnection = nil 
+    end
+
+    if state then
+        -- Helper function para hanapin ang tamang rock folder sa machinesFolder
+        local function getTargetRockFolder()
+            local machines = game.Workspace:FindFirstChild('machinesFolder')
+            if not machines then return nil end
+            
+            -- Subukan ang mga posibleng pangalan ng rock sa laro
+            return machines:FindFirstChild('Ancient Jungle Rock') 
+                or machines:FindFirstChild('Industrial Rock') 
+                or machines:FindFirstChild('Jungle Rock')
+        end
+
+        -- 1. INITIALIZE ENVIRONMENT VISUALS
+        pcall(function()
+            local folder = getTargetRockFolder()
+            if folder then
+                local _Rock = folder:FindFirstChild('Rock')
+                if _Rock then
+                    _Rock.Size = Vector3.new(12, 12, 12)
+                    _Rock.Transparency = 1
+                    _Rock.CanCollide = false
+                    
+                    if _Rock:FindFirstChild('rockGui') then
+                        for _, guiItem in ipairs(_Rock.rockGui:GetChildren()) do
+                            guiItem.Visible = false
+                        end
+                    end
+                    
+                    local particleNames = {'rockEmitter', 'hoopParticle', 'lavaParticle'}
+                    for _, name in ipairs(particleNames) do
+                        local effect = _Rock:FindFirstChild(name)
+                        if effect then effect:Destroy() end
+                    end
+                end
+            end
+        end)
+
+        -- 2. FAST PUNCH RENDERING LOOP
+        punchConnection = game:GetService('RunService').Heartbeat:Connect(function()
+            local _Character = _LocalPlayer.Character
+            if _Character and _G.punchanim then
+                local _Humanoid = _Character:FindFirstChildOfClass('Humanoid')
+                local _Punch = _Backpack:FindFirstChild('Punch') or _Character:FindFirstChild('Punch')
+                
+                if _Punch then
+                    local _attackTime = _Punch:FindFirstChild('attackTime')
+                    if _attackTime then _attackTime.Value = 0 end
+                    if _Humanoid and _Punch.Parent ~= _Character then 
+                        _Humanoid:EquipTool(_Punch) 
+                    end
+                    _Punch:Activate()
+                end
+            end
+        end)
+
+        -- 3. THE FARMING PROCESSING LOOP
+        task.spawn(function()
+            while isCombinedFarm do
+                local _Character = _LocalPlayer.Character
+                
+                -- Task 1: Lock Rock Instance onto Character Geometry
+                local _LeftHand = _Character and _Character:FindFirstChild('LeftHand')
+                local folder = getTargetRockFolder()
+                local _Rock = folder and folder:FindFirstChild('Rock')
+                
+                if _Rock and _LeftHand then
+                    _Rock.CFrame = _LeftHand.CFrame
+                end
+                
+                -- Task 2: Maintain Pushup Tool Assembly State Hierarchy 
+                local _Pushups = _Backpack and _Backpack:FindFirstChild('Pushups')
+                if _Pushups and _Character and _Character:FindFirstChildOfClass('Humanoid') then
+                    _Character.Humanoid:EquipTool(_Pushups)
+                end
+                
+                -- Task 3: Package Datagram Array and Execute Network Request Upstream
+                if _LocalPlayer:FindFirstChild('muscleEvent') then
+                    _LocalPlayer.muscleEvent:FireServer(unpack({'rep'}))
+                end
+                
+                task.wait(0.01)
+            end
+        end)
+
+    else
+        -- 4. CLEAN RESET EXECUTABLE STACK
+        local function getTargetRockFolder()
+            local machines = game.Workspace:FindFirstChild('machinesFolder')
+            if not machines then return nil end
+            return machines:FindFirstChild('Ancient Jungle Rock') 
+                or machines:FindFirstChild('Industrial Rock') 
+                or machines:FindFirstChild('Jungle Rock')
+        end
+
+        local _Punch = _Backpack:FindFirstChild('Punch') or (_LocalPlayer.Character and _LocalPlayer.Character:FindFirstChild('Punch'))
+        if _Punch and _Punch:FindFirstChild('attackTime') then 
+            _Punch.attackTime.Value = 0.35 
+        end
+        
+        if _LocalPlayer.Character then
+            local _Tool = _LocalPlayer.Character:FindFirstChildOfClass('Tool')
+            if _Tool and _Tool.Name == 'Pushups' then
+                _Tool.Parent = _Backpack
+            end
+        end
+        
+        pcall(function()
+            local folder = getTargetRockFolder()
+            if folder then
+                local _Rock = folder:FindFirstChild('Rock')
+                if _Rock then
+                    if _Rock:FindFirstChild('rockGui') then
+                        for _, guiItem in ipairs(_Rock.rockGui:GetChildren()) do
+                            guiItem.Visible = true
+                        end
+                    end
+                    _Rock.CanCollide = true
+                    _Rock.Transparency = 0
+                    _Rock.Size = Vector3.new(141.97381591796875, 123.69998931884766, 149.70497131347656)
+                    if _Rock:FindFirstChild('originalPosition') then 
+                        _Rock.CFrame = CFrame.new(_Rock.originalPosition.Value) 
+                    end
+                end
+            end
+        end)
+    end
+end):Set(false)
+
+-- Label para sa Eggs section
+if _FarmV1.AddLabel then
+    local eggLabel = _FarmV1:AddLabel('Eggs:')
+    if eggLabel and eggLabel.TextSize then
+        eggLabel.TextSize = 22
+    end
+end
+
+local u377 = false
+
+local function u382()
+    pcall(function()
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local backpack = player:FindFirstChild('Backpack')
+        
+        -- Hanapin ang Protein Egg sa Character o Backpack
+        local proteinEgg = (character and character:FindFirstChild('Protein Egg')) or (backpack and backpack:FindFirstChild('Protein Egg'))
+        
+        if proteinEgg then
+            -- I-fire ang muscleEvent gamit ang eksaktong arguments mula sa SimpleSpy
+            local args = {
+                [1] = "proteinEgg",
+                [2] = proteinEgg
+            }
+            player.muscleEvent:FireServer(unpack(args))
+        end
+    end)
+end
+
+-- Background worker para sa 30-minute interval (1800 seconds)
+task.spawn(function()
+    while true do
+        if u377 then
+            u382()
+            -- Maghihintay ng 1800 seconds (30 mins), pero binabantayan kung naka-off na ang switch
+            local elapsed = 0
+            while elapsed < 1800 and u377 do
+                task.wait(1)
+                elapsed = elapsed + 1
+            end
+        else
+            task.wait(1)
+        end
+    end
 end)
+
+-- Switch para i-toggle ang Egg feature
+_FarmV1:AddSwitch('Eat Egg (30 Min)', function(p383)
+    u377 = p383
+    -- Kung i-on, agad na kakainin ang unang itlog para hindi na maghintay ng 30 mins sa simula
+    if p383 then
+        task.spawn(u382)
+    end
+end)
+
+		_FarmV1:AddTextBox('Enter Rep Speed', function(p273)
+			local v274 = tonumber(p273)
+			if v274 and 0 < v274 then
+				getgenv().ThreadCount = v274
+				print('Thread count set to:', v274)
+			else
+				warn('Invalid number of threads entered.')
+			end
+		end)
+		_FarmV1:AddSwitch('Start Gaining Strength', function(p275)
+			getgenv().isGrinding = p275
+			if p275 then
+				for _ = 1, getgenv().ThreadCount do
+					task.spawn(function()
+						while getgenv().isGrinding do
+							local v276, v277 = pcall(function()
+								game:GetService('Players').LocalPlayer.muscleEvent:FireServer('rep')
+							end)
+							if not v276 then
+								warn('Failed to fire rep:', v277)
+							end
+							task.wait(0.01)
+						end
+					end)
+				end
+			end
+		end)
 
 -- Create Tab
 local crystalsTab = window:AddTab("Crystals")
 
 local selectedCrystal = "Blue Crystal"
+local selectedOpenMode = "1x" -- Default ay 1x
 local autoOpenEnabled = false
 
--- Create Dropdown Menu using Elerium v2 native syntax
+-- Create Dropdown Menu para sa Crystals
 local crystalDropdown = crystalsTab:AddDropdown("Select Crystal", function(text)
     selectedCrystal = text
 end)
@@ -88,25 +479,48 @@ crystalDropdown:Add("Galaxy Oracle Crystal")
 crystalDropdown:Add("Jungle Crystal")
 crystalDropdown:Add("Industrial Crystal")
 
--- Switch to toggle auto-opening of the selected crystal
+-- Dropdown para mamili kung 1x, 3x, o 10x ang bubuksan
+local amountDropdown = crystalsTab:AddDropdown("Open Amount", function(text)
+    selectedOpenMode = text
+end)
+
+amountDropdown:Add("1x")
+amountDropdown:Add("3x")
+amountDropdown:Add("10x")
+
+-- Switch para sa Auto Open (Gagana sa kahit anong crystal at sa napili mong mode)
 crystalsTab:AddSwitch("Auto Open Crystal", function(state)
     autoOpenEnabled = state
     
     if autoOpenEnabled then
         task.spawn(function()
             while autoOpenEnabled do
-                local args = {
-                    [1] = "openCrystal",
-                    [2] = selectedCrystal
-                }
-                
-                -- Sinubukan ko gamitin ang InvokeServer base sa binigay mo, 
-                -- pero kung mag-error o hindi gumana, pwede mong palitan ng FireServer
                 pcall(function()
-                    game:GetService("ReplicatedStorage").rEvents.openCrystalRemote:InvokeServer(unpack(args))
+                    if selectedOpenMode == "1x" then
+                        local args = {
+                            [1] = "openCrystal",
+                            [2] = selectedCrystal
+                        }
+                        game:GetService("ReplicatedStorage").rEvents.openCrystalRemote:InvokeServer(unpack(args))
+                    elseif selectedOpenMode == "3x" then
+                        local args = {
+                            [1] = "openCrystalBulk",
+                            [2] = selectedCrystal,
+                            [3] = 3
+                        }
+                        game:GetService("ReplicatedStorage").rEvents.openCrystalRemote:InvokeServer(unpack(args))
+                    elseif selectedOpenMode == "10x" then
+                        -- Kung ang laro ay may 10x bulk remote o gusto mong subukan ang 10 value:
+                        local args = {
+                            [1] = "openCrystalBulk",
+                            [2] = selectedCrystal,
+                            [3] = 10 -- Pinalitan na nating 10
+                        }
+                        game:GetService("ReplicatedStorage").rEvents.openCrystalRemote:InvokeServer(unpack(args))
+                    end
                 end)
                 
-                task.wait(0.5) -- Pwede mong baguhin yung delay kung mabilis o mabagal
+                task.wait(0.5)
             end
         end)
     end
@@ -114,7 +528,6 @@ end)
 
 local autoSellFolder = crystalsTab:AddFolder("Auto Sell")
 
--- Helper function para gumawa ng auto-sell switch para sa bawat pet
 local function createAutoSellSwitch(tab, petName)
     local autoSellEnabled = false
     
@@ -129,7 +542,6 @@ local function createAutoSellSwitch(tab, petName)
                     local petTarget = nil
                     
                     if petsFolder then
-                        -- Hinahanap natin ang pet sa lahat ng subfolders (Unique, Common, at iba pa)
                         for _, folder in ipairs(petsFolder:GetChildren()) do
                             if folder:IsA("Folder") or folder:IsA("Configuration") then
                                 local found = folder:FindFirstChild(petName)
@@ -150,25 +562,22 @@ local function createAutoSellSwitch(tab, petName)
                         game:GetService("ReplicatedStorage").rEvents.sellPetEvent:FireServer(unpack(args))
                     end
                     
-                    task.wait(1) -- Delay bago i-check ulit
+                    task.wait(1)
                 end
             end)
         end
     end)
 end
 
--- Pag-generate ng bawat switch sa crystalsTab (Inayos ko na rin ang spelling ng iba)
 createAutoSellSwitch(crystalsTab, "Core Pup")
 createAutoSellSwitch(crystalsTab, "Volt Talon")
 createAutoSellSwitch(crystalsTab, "Reactor Beast")
-createAutoSellSwitch(crystalsTab, "Plasma Ravager") -- Inayos mula Ravanger
+createAutoSellSwitch(crystalsTab, "Plasma Ravager")
 createAutoSellSwitch(crystalsTab, "Titan Reactor")
-createAutoSellSwitch(crystalsTab, "Apex Overlord")  -- Inayos mula Overloard
+createAutoSellSwitch(crystalsTab, "Apex Overlord")
 
--- Gumawa tayo ng Folder na may pangalang "Auto Evolve" sa loob ng crystalsTab
 local autoEvolveFolder = crystalsTab:AddFolder("Auto Evolve")
 
--- Helper function para gumawa ng auto-evolve switch para sa bawat pet
 local function createAutoEvolveSwitch(folder, petName)
     local autoEvolveEnabled = false
     
@@ -184,15 +593,13 @@ local function createAutoEvolveSwitch(folder, petName)
                     }
 
                     game:GetService("ReplicatedStorage").rEvents.petEvolveEvent:FireServer(unpack(args))
-                    
-                    task.wait(1.5) -- Delay bago i-fire ulit ang remote
+                    task.wait(1.5)
                 end
             end)
         end
     end)
 end
 
--- Pag-generate ng bawat switch sa loob ng "Auto Evolve" folder
 createAutoEvolveSwitch(autoEvolveFolder, "Core Pup")
 createAutoEvolveSwitch(autoEvolveFolder, "Volt Talon")
 createAutoEvolveSwitch(autoEvolveFolder, "Reactor Beast")
@@ -202,7 +609,6 @@ createAutoEvolveSwitch(autoEvolveFolder, "Apex Overload")
 
 local autoEvolveAllEnabled = false
 
--- Switch para i-auto evolve LAHAT ng pets sa inventory mo
 autoEvolveFolder:AddSwitch("Auto Evolve All Pets", function(state)
     autoEvolveAllEnabled = state
     
@@ -213,26 +619,24 @@ autoEvolveFolder:AddSwitch("Auto Evolve All Pets", function(state)
                 local petsFolder = player and player:FindFirstChild("petsFolder")
                 
                 if petsFolder then
-                    -- Kunin lahat ng subfolders (Unique, Common, Rare, Epic, etc.)
                     for _, subfolder in ipairs(petsFolder:GetChildren()) do
                         if subfolder:IsA("Folder") or subfolder:IsA("Configuration") then
-                            -- Silipin lahat ng pets sa loob ng subfolder na yun
                             for _, pet in ipairs(subfolder:GetChildren()) do
                                 if not autoEvolveAllEnabled then break end
                                 
                                 local args = {
                                     [1] = "evolvePet",
-                                    [2] = pet.Name -- Pangalan ng pet ang pinapasa sa remote
+                                    [2] = pet.Name
                                 }
 
                                 game:GetService("ReplicatedStorage").rEvents.petEvolveEvent:FireServer(unpack(args))
-                                task.wait(0.2) -- Kaunting delay kada pet para maiwasan ang rate limit
+                                task.wait(0.2)
                             end
                         end
                     end
                 end
                 
-                task.wait(1.5) -- Uulitin pagkatapos ng ilang segundo para i-check kung may bago kang pets
+                task.wait(1.5)
             end
         end)
     end
