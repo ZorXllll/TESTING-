@@ -455,6 +455,300 @@ end)
 			end
 		end)
 
+-- Create Tabs
+local _Rebirthing = window:AddTab('Rebirthing')
+
+-- Core States
+local sizeSpam = false
+local lockPosition = false
+local teleportLoop = nil
+local u45 = false
+local u47 = 0
+local u49 = false
+local fastRebirth = false
+local savedPosition = nil
+
+-- ============================================================================
+-- REBIRTHING TAB COMPONENTS
+-- ============================================================================
+
+local reb = _Rebirthing:AddFolder("Farming Tools")
+
+-- Auto Strength Switch
+reb:AddSwitch('Auto Lift', function(p30)
+    isAutoStrength = p30
+    local _LocalPlayer2 = game.Players.LocalPlayer
+    
+    local function v36()
+        while isAutoStrength do
+            local _Backpack = _LocalPlayer2:FindFirstChild('Backpack')
+            local v33 = _LocalPlayer2.Character or _LocalPlayer2.CharacterAdded:Wait()
+            local _Humanoid = v33:FindFirstChild('Humanoid')
+            local v35 = _Backpack and _Humanoid and (not v33:FindFirstChild('Weight') and _Backpack:FindFirstChild('Weight'))
+            if v35 then
+                _Humanoid:EquipTool(v35)
+            end
+            _LocalPlayer2.muscleEvent:FireServer('rep')
+            task.wait(0.1)
+        end
+    end
+    if p30 then
+        task.spawn(v36)
+    end
+end):Set(false)
+
+		reb:AddSwitch('Auto Pushups', function(p316)
+			isAutoPushups = p316
+			local _LocalPlayer31 = game.Players.LocalPlayer
+			local _Backpack2 = _LocalPlayer31:FindFirstChild('Backpack')
+			while isAutoPushups do
+				wait(0.01)
+				local v319 = _Backpack2 and _Backpack2:FindFirstChild('Pushups')
+				if v319 then
+					_LocalPlayer31.Character.Humanoid:EquipTool(v319)
+				end
+				game:GetService('Players').LocalPlayer.muscleEvent:FireServer(unpack({
+					'rep',
+				}))
+			end
+			if not isAutoPushups then
+				local _Tool = _LocalPlayer31.Character:FindFirstChildOfClass('Tool')
+				if _Tool and _Tool.Name == 'Pushups' then
+					_Tool.Parent = _Backpack2
+				end
+			end
+		end):Set(false)
+		reb:AddSwitch('Auto Situps', function(p321)
+			isAutoSitups = p321
+			local _LocalPlayer32 = game.Players.LocalPlayer
+			local _Backpack3 = _LocalPlayer32:FindFirstChild('Backpack')
+			while isAutoSitups do
+				wait(0.01)
+				local v324 = _Backpack3 and _Backpack3:FindFirstChild('Situps')
+				if v324 then
+					_LocalPlayer32.Character.Humanoid:EquipTool(v324)
+				end
+				game:GetService('Players').LocalPlayer.muscleEvent:FireServer(unpack({
+					'rep',
+				}))
+			end
+			if not isAutoSitups then
+				local _Tool2 = _LocalPlayer32.Character:FindFirstChildOfClass('Tool')
+				if _Tool2 and _Tool2.Name == 'Situps' then
+					_Tool2.Parent = _Backpack3
+				end
+			end
+		end):Set(false)
+		reb:AddSwitch('Auto Handstands', function(p326)
+			isAutoHandstands = p326
+			local _LocalPlayer33 = game.Players.LocalPlayer
+			local _Backpack4 = _LocalPlayer33:FindFirstChild('Backpack')
+			while isAutoHandstands do
+				wait(0.01)
+				local v329 = _Backpack4 and _Backpack4:FindFirstChild('Handstands')
+				if v329 then
+					_LocalPlayer33.Character.Humanoid:EquipTool(v329)
+				end
+				game:GetService('Players').LocalPlayer.muscleEvent:FireServer(unpack({
+					'rep',
+				}))
+			end
+			if not isAutoHandstands then
+				local _Tool3 = _LocalPlayer33.Character:FindFirstChildOfClass('Tool')
+				if _Tool3 and _Tool3.Name == 'Handstands' then
+					_Tool3.Parent = _Backpack4
+				end
+			end
+		end):Set(false)
+
+-- Auto Set Size 2 Switch
+_Rebirthing:AddSwitch('Auto Size 2', function(p37)
+    sizeSpam = p37
+    local function v38()
+        while sizeSpam do
+            game:GetService('ReplicatedStorage').rEvents.changeSpeedSizeRemote:InvokeServer('changeSize', 2)
+            task.wait(0.1)
+        end
+    end
+    if p37 then
+        task.spawn(v38)
+    end
+end):Set(false)
+
+-- Lock Position Switch
+_Rebirthing:AddSwitch('Lock Position', function(p39)
+    lockPosition = p39
+    local _LocalPlayer3 = game.Players.LocalPlayer
+    local v41 = _LocalPlayer3.Character or _LocalPlayer3.CharacterAdded:Wait()
+    local _Humanoid2 = v41:FindFirstChild('Humanoid')
+    local _HumanoidRootPart = v41:FindFirstChild('HumanoidRootPart')
+    
+    if p39 and (_Humanoid2 and _HumanoidRootPart) then
+        savedPosition = _HumanoidRootPart.Position
+        _Humanoid2.WalkSpeed = 0
+        task.spawn(function()
+            while lockPosition do
+                if _HumanoidRootPart and (_HumanoidRootPart.Position - savedPosition).magnitude > 0.1 then
+                    _HumanoidRootPart.CFrame = CFrame.new(savedPosition)
+                end
+                task.wait(0.05)
+            end
+        end)
+    elseif _Humanoid2 then
+        _Humanoid2.WalkSpeed = 16
+    end
+end):Set(false)
+
+-- Auto Teleport to King Switch
+_Rebirthing:AddSwitch('Auto Teleport to King', function(p44)
+    if p44 then
+        teleportLoop = task.spawn(function()
+            while task.wait(0) do
+                if game.Players.LocalPlayer.Character then
+                    game.Players.LocalPlayer.Character:MoveTo(Vector3.new(-8646, 17, -5738))
+                end
+            end
+        end)
+    elseif teleportLoop then
+        task.cancel(teleportLoop)
+        teleportLoop = nil
+    end
+end):Set(false)
+
+-- Auto Rebirth (Infinite) Switch
+_Rebirthing:AddSwitch('Auto Rebirth (Infinite)', function(p46)
+    u45 = p46
+    if u45 then
+        task.spawn(function()
+            while u45 do
+                game:GetService('ReplicatedStorage').rEvents.rebirthRemote:InvokeServer('rebirthRequest')
+                task.wait(0.1)
+            end
+        end)
+    end
+end):Set(false)
+
+-- Rebirth Stop Point TextBox
+_Rebirthing:AddTextBox('Rebirth Stop Point', function(p48)
+    u47 = tonumber(p48) or 0
+end)
+
+-- Rebirth Until Stop Point Switch
+_Rebirthing:AddSwitch('Rebirth Until Stop Point', function(p50)
+    u49 = p50
+    if u49 then
+        task.spawn(function()
+            while u49 do
+                local _leaderstats = game.Players.LocalPlayer:FindFirstChild('leaderstats')
+                if _leaderstats then
+                    _leaderstats = _leaderstats:FindFirstChild('Rebirths')
+                end
+                if _leaderstats and u47 <= _leaderstats.Value then
+                    u49 = false
+                    break
+                end
+                game:GetService('ReplicatedStorage').rEvents.rebirthRemote:InvokeServer('rebirthRequest')
+                task.wait(0.1)
+            end
+        end)
+    end
+end):Set(false)
+
+_Rebirthing:AddSwitch('Fast Rebirth', function(p52)
+    fastRebirth = p52
+    if fastRebirth then
+        task.spawn(function()
+            local _ReplicatedStorage = game:GetService('ReplicatedStorage')
+            local _LocalPlayer4 = game:GetService('Players').LocalPlayer
+            
+            local function u64()
+                local _petsFolder = _LocalPlayer4:FindFirstChild('petsFolder')
+                if _petsFolder then
+                    for _, v59 in pairs(_petsFolder:GetChildren()) do
+                        if v59:IsA('Folder') then
+                            for _, v63 in pairs(v59:GetChildren()) do
+                                _ReplicatedStorage.rEvents.equipPetEvent:FireServer('unequipPet', v63)
+                            end
+                        end
+                    end
+                end
+                task.wait(0.1)
+            end
+            
+            local function v70(p65)
+                u64()
+                task.wait(0.01)
+                if _LocalPlayer4:FindFirstChild('petsFolder') and _LocalPlayer4.petsFolder:FindFirstChild('Unique') then
+                    for _, v69 in pairs(_LocalPlayer4.petsFolder.Unique:GetChildren()) do
+                        if v69.Name == p65 then
+                            _ReplicatedStorage.rEvents.equipPetEvent:FireServer('equipPet', v69)
+                        end
+                    end
+                end
+            end
+            
+            local function v78(p72)
+                local v73 = workspace:FindFirstChild('machinesFolder') and workspace.machinesFolder:FindFirstChild(p72)
+                if not v73 then
+                    for _, v77 in pairs(workspace:GetChildren()) do
+                        if v77:IsA('Folder') and v77.Name:find('machines') then
+                            v73 = v77:FindFirstChild(p72)
+                            if v73 then break end
+                        end
+                    end
+                end
+                return v73
+            end
+            
+            local function v80()
+                local _VirtualInputManager = game:GetService('VirtualInputManager')
+                _VirtualInputManager:SendKeyEvent(true, 'E', false, game)
+                task.wait(0.1)
+                _VirtualInputManager:SendKeyEvent(false, 'E', false, game)
+            end
+            
+            while fastRebirth do
+                local v81 = 10000 + 5000 * _LocalPlayer4.leaderstats.Rebirths.Value
+                if _LocalPlayer4:FindFirstChild('ultimatesFolder') and _LocalPlayer4.ultimatesFolder:FindFirstChild('Golden Rebirth') then
+                    local _Value = _LocalPlayer4.ultimatesFolder['Golden Rebirth'].Value
+                    v81 = math.floor(v81 * (1 - _Value * 0.1))
+                end
+                
+                u64()
+                task.wait(0.1)
+                v70('Swift Samurai')
+                
+                while _LocalPlayer4.leaderstats.Strength.Value < v81 do
+                    for _ = 1, 15 do
+                        _LocalPlayer4.muscleEvent:FireServer('rep')
+                    end
+                    task.wait()
+                end
+                
+                u64()
+                task.wait(0.1)
+                v70('Tribal Overlord')
+                
+                local _JungleBarLift = v78('Jungle Bar Lift')
+                if _JungleBarLift and _JungleBarLift:FindFirstChild('interactSeat') then
+                    _LocalPlayer4.Character.HumanoidRootPart.CFrame = _JungleBarLift.interactSeat.CFrame * CFrame.new(0, 3, 0)
+                    repeat
+                        task.wait(0.1)
+                        v80()
+                    until _LocalPlayer4.Character.Humanoid.Sit
+                end
+                
+                local _Value2 = _LocalPlayer4.leaderstats.Rebirths.Value
+                repeat
+                    _ReplicatedStorage.rEvents.rebirthRemote:InvokeServer('rebirthRequest')
+                    task.wait(0.1)
+                until _Value2 < _LocalPlayer4.leaderstats.Rebirths.Value
+                task.wait()
+            end
+        end)
+    end
+end):Set(false)
+
 -- Create Tab
 local crystalsTab = window:AddTab("Crystals")
 
@@ -639,5 +933,56 @@ autoEvolveFolder:AddSwitch("Auto Evolve All Pets", function(state)
                 task.wait(1.5)
             end
         end)
+    end
+end)
+
+local _Teleport = window:AddTab('Teleport')
+
+-- Global Teleport Selection Variables
+local selectedLocationCFrame = nil
+local locations = {
+    ['Spawn']            = CFrame.new(0, 0, 0),
+    ['Tiny Island']           = CFrame.new(-39.0918, 10.0, 1886.1307),
+    ['Frost Island']          = CFrame.new(-2623.0222, 10.0, -409.0733),
+    ['Mythical Island']       = CFrame.new(2250.7780, 10.0, 1073.2266),
+    ['Infernal Island']       = CFrame.new(-6758.9638, 10.0, -1284.9187),
+    ['Legend Island']         = CFrame.new(4603.2817, 995.0, -3897.8657),
+    ['Muscle King']           = CFrame.new(-8625.9287, 20.0, -5730.4721),
+    ['Ancient Jungle Island'] = CFrame.new(-8642.2529, 10.0, 2380.5065)
+}
+
+-- Dropdown Configuration
+local _SelectTeleport = _Teleport:AddDropdown('Select Teleport', function(choice)
+    selectedLocationCFrame = locations[choice]
+end)
+
+-- Add Options to Dropdown Layout
+_SelectTeleport:Add('Spawn')
+_SelectTeleport:Add('Tiny Island')
+_SelectTeleport:Add('Frost Island')
+_SelectTeleport:Add('Mythical Island')
+_SelectTeleport:Add('Infernal Island')
+_SelectTeleport:Add('Legend Island')
+_SelectTeleport:Add('Muscle King')
+_SelectTeleport:Add('Ancient Jungle Island')
+
+-- Teleport Execution Button
+_Teleport:AddButton('Teleport Now', function()
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        if selectedLocationCFrame then
+            -- Wipe local physics momentum to block server rubberbanding
+            character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+            character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            
+            -- Teleport client assembly safely
+            character:PivotTo(selectedLocationCFrame)
+        else
+            warn('No location selected inside dropdown menu.')
+        end
+    else
+        warn('Character root structure not fully loaded.')
     end
 end)
