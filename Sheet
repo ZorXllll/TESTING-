@@ -10,6 +10,186 @@ local window = library:AddWindow("Muscle Legends", {
 
 local _FarmV1 = window:AddTab('Farm');
 
+local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local AntiAFKConnection = nil
+local AFKTimerThread = nil
+local RainbowThread = nil
+
+-- 1. Create Standalone ScreenGui Overlay
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Elerium_AFKOverlay"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Protect GUI from detection if supported by executor
+pcall(function()
+    if syn and syn.protect_gui then
+        syn.protect_gui(ScreenGui)
+    elseif gethui then
+        ScreenGui.Parent = gethui()
+    end
+end)
+
+if not ScreenGui.Parent then
+    ScreenGui.Parent = CoreGui
+end
+
+-- 2. Build the Timer Frame Layout (Fixed Position & Fully Transparent)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 500, 0, 80)
+MainFrame.Position = UDim2.new(0.5, -250, 0.00, 0)
+MainFrame.BackgroundTransparency = 1
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = false 
+MainFrame.Draggable = false 
+MainFrame.Visible = false 
+MainFrame.Parent = ScreenGui
+
+-- Rainbow Text Label (ANTI AFK Text)
+local TextLabel = Instance.new("TextLabel")
+TextLabel.Size = UDim2.new(1, 0, 1, 0)
+TextLabel.BackgroundTransparency = 1
+TextLabel.Text = "ANTI AFK: 00:00:00"
+TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel.Font = Enum.Font.GothamBold
+TextLabel.TextSize = 25 
+TextLabel.TextXAlignment = Enum.TextXAlignment.Center
+TextLabel.TextYAlignment = Enum.TextYAlignment.Center
+TextLabel.Parent = MainFrame
+
+-- 3. Add to your Elerium Tab
+local AntiAFKSwitch = _FarmV1:AddSwitch("Anti-AFK ☕", function(bool)
+    if bool then
+        -- Make the ScreenGui container visible
+        MainFrame.Visible = true
+        
+        -- Start Anti-AFK connection
+        if not AntiAFKConnection then
+            AntiAFKConnection = player.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        end
+        
+        -- Start clock thread
+        if not AFKTimerThread then
+            AFKTimerThread = task.spawn(function()
+                local startTime = os.time()
+                while true do
+                    local elapsed = os.time() - startTime
+                    local hours = math.floor(elapsed / 3600)
+                    local minutes = math.floor((elapsed % 3600) / 60)
+                    local seconds = elapsed % 60
+                    
+                    TextLabel.Text = string.format("ANTI AFK: %02d:%02d:%02d", hours, minutes, seconds)
+                    task.wait(1)
+                end
+            end)
+        end
+
+        -- Start Rainbow Text dynamic loop thread
+        if not RainbowThread then
+            RainbowThread = task.spawn(function()
+                local hue = 0
+                while true do
+                    TextLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
+                    hue = hue + 0.01
+                    if hue >= 1 then
+                        hue = 0
+                    end
+                    task.wait(0.03)
+                end
+            end)
+        end
+    else
+        -- Hide the ScreenGui container completely
+        MainFrame.Visible = false
+        
+        -- Stop everything safely
+        if AntiAFKConnection then
+            AntiAFKConnection:Disconnect()
+            AntiAFKConnection = nil
+        end
+        
+        if AFKTimerThread then
+            task.cancel(AFKTimerThread)
+            AFKTimerThread = nil
+        end
+
+        if RainbowThread then
+            task.cancel(RainbowThread)
+            RainbowThread = nil
+        end
+    end
+end)
+
+-- Visually toggle Elerium switch checkmark to ON immediately upon loading script
+AntiAFKSwitch:Set(true)
+
+-- Global state for Popups
+local _G = getgenv and getgenv() or _G
+_G.HideGainedPopups = false
+local originalStates = {}
+
+-- Checks if the UI element is any type of standard visual Frame container
+local function isFrameUi(element)
+    return element:IsA("Frame") or element:IsA("ScrollingFrame") or element:IsA("CanvasGroup")
+end
+
+local function hideElement(element)
+    if not isFrameUi(element) then return end
+    
+    -- Save original properties before modifying them
+    if not originalStates[element] then
+        originalStates[element] = {
+            Visible = element.Visible,
+            Position = element.Position
+        }
+    end
+    
+    element.Visible = false
+    element.Position = UDim2.new(5, 0, 5, 0) -- Teleport far off-screen
+end
+
+local function restoreElements()
+    for element, state in pairs(originalStates) do
+        if element and element.Parent then
+            element.Visible = state.Visible
+            element.Position = state.Position
+        end
+    end
+    table.clear(originalStates)
+end
+
+-- Listen for any new frames being added dynamically while the switch is ON
+playerGui.DescendantAdded:Connect(function(descendant)
+    if _G.HideGainedPopups then
+        task.wait(0.05)
+        if _G.HideGainedPopups then
+            hideElement(descendant)
+        end
+    end
+end)
+
+-- Hooked directly into your Elerium v2 switch
+_FarmV1:AddSwitch("Hide All UI Frames", function(state)
+    _G.HideGainedPopups = state
+    if state then
+        for _, desc in ipairs(playerGui:GetDescendants()) do
+            hideElement(desc)
+        end
+    else
+        restoreElements()
+    end
+end)
+
 local fuck = _FarmV1:AddFolder("Farming Tools")
 local opfarms = _FarmV1:AddFolder("OP Farming")
 
