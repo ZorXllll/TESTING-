@@ -3,8 +3,8 @@ local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/IVRzH
 
 -- Create Window
 local window = library:AddWindow("Muscle Legends", {
-    main_color = Color3.fromRGB(41, 74, 122),
-    min_size = Vector2.new(350, 300),
+    main_color = Color3.fromRGB(85, 888, 22),
+    min_size = Vector2.new(550, 500),
     can_resize = false,
 })
 
