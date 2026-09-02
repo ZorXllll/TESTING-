@@ -843,6 +843,140 @@ end):Set(false)
 -- Create Tab
 local crystalsTab = window:AddTab("Crystals")
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local cPetShopFolder = ReplicatedStorage:WaitForChild("shared"):WaitForChild("runtime"):WaitForChild("cPetShopFolder")
+local cPetShopRemote = ReplicatedStorage:WaitForChild("rEvents"):WaitForChild("cPetShopRemote")
+
+local crystalData = {
+    {"Blue Birdie"}, {"Orange Hedgehog"}, {"Red Kitty"}, {"Dark Vampy"},
+    {"Blue Bunny"}, {"Silver Dog"}, {"Green Butterfly"}, {"Crimson Falcon"},
+    {"Dark Golem"}, {"Yellow Butterfly"}, {"Purple Dragon"}, {"Blue Phoenix"},
+    {"Orange Pegasus"}, {"Purple Falcon"}, {"Red Dragon"}, {"Blue Firecaster"},
+    {"Golden Phoenix"}, {"Red Firecaster"}, {"Infernal Dragon"}, {"White Pegasus"},
+    {"Inferno"}, {"Ultra Birdie"}, {"Magic Butterfly"}, {"Green Firecaster"},
+    {"White Phoenix"}, {"Supernova"}, {"Frostwave Legends Penguin"},
+    {"Phantom Genesis Dragon"}, {"Dark Legends Manticore"}, {"Ultimate Supernova Pegasus"},
+    {"Aether Spirit Bunny"}, {"Cybernetic Showdown Dragon"}, {"Eternal Strike Leviathan"},
+    {"Lightning Strike Phantom"}, {"Darkstar Hunter"}, {"Muscle Sensei"},
+    {"Neon Guardian"}, {"Eternal Megastrike"}, {"Golden Viking"}, {"Core Pup"},
+    {"Volt Talon"}, {"Reactor Beast"}, {"Plasma Ravager"}, {"Titan Reactor"},
+    {"Apex Overlord"}, {"Gold Warrior"}
+}
+
+local auraNamesList = {
+    ["Blue Aura"] = true,
+    ["Red Aura"] = true,
+    ["Green Aura"] = true,
+    ["Purple Aura"] = true,
+    ["Yellow Aura"] = true,
+    ["Lightning"] = true,
+    ["Electro"] = true,
+    ["Power Lightning"] = true,
+    ["Dark Lightning"] = true,
+    ["Inferno"] = true,
+    ["Supernova"] = true,
+    ["Azure Tundra"] = true,
+    ["Ultra Inferno"] = true,
+    ["Grand Supernova"] = true,
+    ["Eternal Megastrike"] = true,
+    ["Entropic Blast"] = true,
+    ["Astral Electro"] = true,
+    ["Dark Electro"] = true,
+    ["Muscle King"] = true
+}
+
+local allPets = {}
+local allAuras = {}
+local petMap = {}
+local auraMap = {}
+
+-- Kunin lahat ng pets mula sa crystalData
+for _, item in ipairs(crystalData) do
+    local itemName = item[1]
+    if itemName and not petMap[itemName] then
+        petMap[itemName] = true
+        table.insert(allPets, itemName)
+    end
+end
+
+-- Kunin lahat ng auras direkta mula sa auraNamesList
+for auraName, _ in pairs(auraNamesList) do
+    if not auraMap[auraName] then
+        auraMap[auraName] = true
+        table.insert(allAuras, auraName)
+    end
+end
+
+table.sort(allPets)
+table.sort(allAuras)
+
+local selectedPet = ""
+local selectedAura = ""
+
+crystalsTab:AddLabel("=== Buy pets and auras ===")
+
+local petDropdown = crystalsTab:AddDropdown("Select pet", function(text)
+    selectedPet = text
+    print("Pet selected: " .. tostring(text))
+end)
+
+for _, petName in ipairs(allPets) do
+    petDropdown:Add(petName)
+end
+
+local auraDropdown = crystalsTab:AddDropdown("Select Aura", function(text)
+    selectedAura = text
+    print("Aura selected: " .. tostring(text))
+end)
+
+for _, auraName in ipairs(allAuras) do
+    auraDropdown:Add(auraName)
+end
+
+crystalsTab:AddLabel("=== System to buys ===")
+
+crystalsTab:AddSwitch("Auto Buy Pet", function(bool)
+    _G.AutoBuyPet = bool
+    if bool then
+        if selectedPet == "" then
+            print("Please select a pet first!")
+            return
+        end
+        task.spawn(function()
+            while _G.AutoBuyPet and selectedPet ~= "" do
+                local petToBuy = cPetShopFolder:FindFirstChild(selectedPet)
+                if petToBuy then
+                    pcall(function()
+                        cPetShopRemote:InvokeServer(petToBuy)
+                    end)
+                end
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
+
+crystalsTab:AddSwitch("Auto buy Aura", function(bool)
+    _G.AutoBuyAura = bool
+    if bool then
+        if selectedAura == "" then
+            print("Please select an aura first!")
+            return
+        end
+        task.spawn(function()
+            while _G.AutoBuyAura and selectedAura ~= "" do
+                local auraToBuy = cPetShopFolder:FindFirstChild(selectedAura)
+                if auraToBuy then
+                    pcall(function()
+                        cPetShopRemote:InvokeServer(auraToBuy)
+                    end)
+                end
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
+
 local selectedCrystal = "Blue Crystal"
 local selectedOpenMode = "1x" -- Default ay 1x
 local autoOpenEnabled = false
